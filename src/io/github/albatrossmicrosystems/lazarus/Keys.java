@@ -5,7 +5,7 @@ final class Keys {
     private Keys() {}
 
     static final String PKG     = "io.github.albatrossmicrosystems.lazarus";
-    static final String VERSION = "2.1";
+    static final String VERSION = "2.2";
 
     // signature permission: only apps signed with the Lazarus key may control the hook
     static final String PERM        = PKG + ".permission.CONTROL";

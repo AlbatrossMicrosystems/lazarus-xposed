@@ -40,7 +40,42 @@ Lazarus is an Xposed module that runs inside `system_server`.
    (`lazarus_sepolicy`, one SELinux rule: `allow system_server ctl_start_prop property_service set`)
    so the fake reboot can show the boot animation. Without it, the fake reboot stays dark for a few
    seconds and then lights up straight into the lock screen.
-5. *(Optional)* Add the **Real power off** Quick Settings tile.
+5. *(Optional)* Add the **Real power off** Quick Settings tile. The guide in the app has a one-tap
+   button for this on Android 13+.
+6. Install a tracker if you don't have one. [FMD](https://f-droid.org/packages/de.nulide.findmydevice/)
+   works without Google and is allow-listed for dark wake by default.
+
+On first launch the app opens **How to use**, a setup checklist that shows what is still missing:
+module active, boot-animation support, screen lock, and tracking app.
+
+## Tutorial
+
+### Everyday use
+
+| You do | What happens |
+|---|---|
+| Hold power ~1.5 s | **Fake power-off**: one buzz, then the phone looks dead. |
+| While "off": press power, tap the screen, call the phone | Nothing. It stays dark and silent. |
+| While "off": hold power ~3 s | **Fake restart**: buzz → boot animation → lock screen. |
+| While "off": hold Vol-Up + Vol-Down ~3 s | **Owner exit**: the phone wakes up normally. |
+| Power menu or an app tries to shut down | Becomes a fake power-off. |
+| Lazarus → **Power off** / **Restart** (or the tile) | **Real** power off / restart, after your PIN. |
+
+### Try it (2 minutes)
+
+1. Hold power about 1.5 seconds. You feel one buzz and the screen goes black.
+2. Press power a few times and tap the screen. Nothing should happen.
+3. Hold **Vol-Up + Vol-Down** together for 3 seconds. The phone wakes up.
+4. Hold power 1.5 s again, then hold power about **3 seconds**. The boot animation appears, so let go.
+   After about 17 seconds the lock screen is back and the phone is in normal mode.
+5. While the phone is "off", open your tracker's website (e.g. FMD Server) and locate it, ring it
+   or take a photo.
+
+### Settings
+
+Every behaviour can be changed in the app: hold times, total silence, vibration, shutdown
+protection, fake restart, owner exit, the dark-wake app list, and which system settings Lazarus may
+change. The master switch turns Lazarus off completely and restores everything it changed.
 
 ## ⚠️ Read before use
 

@@ -1,6 +1,10 @@
 # Changelog
 
-## 2.1 — first public release
+## 2.2 — first public release
+- In-app "How to use" guide with a live setup checklist (opens on first launch), one-tap Quick
+  Settings tile, clearer module description.
+
+## 2.1
 - In-app settings: master switch, hold times, silence/vibration, shutdown protection, fake reboot,
   owner exit, dark-wake app list, and each managed system setting can be toggled.
 - Original values of changed system settings are recorded and restored when an option or Lazarus

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="io.github.albatrossmicrosystems.lazarus"
-    android:versionCode="12"
-    android:versionName="2.1">
+    android:versionCode="13"
+    android:versionName="2.2">
 
     <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="36" />
 
@@ -13,12 +13,17 @@
     <uses-permission android:name="io.github.albatrossmicrosystems.lazarus.permission.CONTROL" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
+    <!-- the setup checklist looks for a tracking app -->
+    <queries>
+        <package android:name="de.nulide.findmydevice" />
+    </queries>
+
     <application android:label="Lazarus" android:hasCode="true"
         android:icon="@android:drawable/ic_lock_power_off"
         android:allowBackup="false">
         <meta-data android:name="xposedmodule" android:value="true" />
         <meta-data android:name="xposeddescription"
-            android:value="Fake power-off that keeps your phone trackable: holding power only pretends to switch off; holding it again plays a fake reboot. Real power off is PIN-protected." />
+            android:value="Fake power-off: holding the power button only pretends to switch the phone off, so trackers like FMD keep working. Holding it again plays a fake restart. Real power-off is PIN-protected. Scope: System Framework. Open the app for the setup guide." />
         <meta-data android:name="xposedminversion" android:value="93" />
         <meta-data android:name="xposedscope" android:resource="@array/xposed_scope" />
 
@@ -31,6 +36,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity android:name=".GuideActivity"
+            android:label="How to use Lazarus"
+            android:exported="false"
+            android:theme="@android:style/Theme.DeviceDefault.DayNight" />
 
         <!-- PIN-protected REAL power off / restart -->
         <activity android:name=".PowerActivity"

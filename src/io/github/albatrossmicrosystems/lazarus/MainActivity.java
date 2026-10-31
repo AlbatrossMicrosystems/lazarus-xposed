@@ -47,6 +47,9 @@ public class MainActivity extends Activity {
         sv.addView(root);
         setContentView(sv);
         build();
+        if (!getSharedPreferences(GuideActivity.PREFS, MODE_PRIVATE).getBoolean(GuideActivity.SEEN, false)) {
+            startActivity(new Intent(this, GuideActivity.class));        // first launch: show the tutorial
+        }
     }
 
     @Override
@@ -57,9 +60,8 @@ public class MainActivity extends Activity {
 
     // ------------------------------------------------------------------ layout
     private void build() {
-        TextView title = text("Lazarus", 26, true);
-        root.addView(title);
         root.addView(text("Fake power-off that keeps your phone trackable.", 14, false));
+        root.addView(button("How to use · setup checklist", v -> startActivity(new Intent(this, GuideActivity.class))));
 
         status = text("", 14, false);
         status.setPadding(0, dp(12), 0, dp(4));
@@ -243,6 +245,10 @@ public class MainActivity extends Activity {
         t.setText(s);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, sp);
         if (bold) t.setTypeface(Typeface.DEFAULT_BOLD);
+        TypedValue tv = new TypedValue();
+        if (getTheme().resolveAttribute(android.R.attr.textColorPrimary, tv, true)) {
+            t.setTextColor(tv.resourceId != 0 ? getColorStateList(tv.resourceId) : android.content.res.ColorStateList.valueOf(tv.data));
+        }
         return t;
     }
 
