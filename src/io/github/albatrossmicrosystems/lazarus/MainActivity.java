@@ -60,7 +60,8 @@ public class MainActivity extends Activity {
 
     // ------------------------------------------------------------------ layout
     private void build() {
-        root.addView(text("Fake power-off that keeps your phone trackable.", 14, false));
+        root.addView(text("Play dead. Stay findable.", 22, true));
+        root.addView(text("Anti-theft: when a thief switches your phone off, it only looks off, and it keeps telling you where it is.", 14, false));
         root.addView(button("How to use · setup checklist", v -> startActivity(new Intent(this, GuideActivity.class))));
 
         status = text("", 14, false);

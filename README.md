@@ -1,6 +1,8 @@
 # Lazarus
 
-**Fake power-off for rooted Android, so a lost or stolen phone stays trackable.**
+> **Play dead. Stay findable.**
+>
+> *Anti-theft for rooted Android: when a thief switches your phone off, it only looks off, and it keeps telling you where it is.*
 
 When someone holds the power button, Lazarus only *pretends* to switch the phone off: the screen,
 sound and vibration go dead, but Android keeps running, so location, mobile data and your tracking

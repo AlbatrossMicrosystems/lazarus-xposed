@@ -50,6 +50,7 @@ public class GuideActivity extends Activity {
     }
 
     private void build() {
+        section("Play dead. Stay findable.");
         para("Lazarus makes your phone only pretend to switch off. When someone holds the power button, "
                 + "the screen, sound and vibration go dead, but Android keeps running, so your tracking app "
                 + "can still report where the phone is.\n\n"
