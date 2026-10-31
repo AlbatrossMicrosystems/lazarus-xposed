@@ -1,0 +1,6 @@
+id=lazarus_sepolicy
+name=Lazarus - SELinux rule
+version=v1.0
+versionCode=1
+author=Albatross Microsystems
+description=Lets system_server start the boot animation (fake reboot in io.github.albatrossmicrosystems.lazarus).

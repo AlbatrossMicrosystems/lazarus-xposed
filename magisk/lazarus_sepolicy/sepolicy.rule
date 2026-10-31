@@ -1,0 +1,1 @@
+allow system_server ctl_start_prop property_service set

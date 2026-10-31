@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="io.github.albatrossmicrosystems.lazarus"
+    android:versionCode="12"
+    android:versionName="2.1">
+
+    <uses-sdk android:minSdkVersion="30" android:targetSdkVersion="36" />
+
+    <!-- Only apps signed with the same key as Lazarus may control the hook in system_server. -->
+    <permission android:name="io.github.albatrossmicrosystems.lazarus.permission.CONTROL"
+        android:label="Control Lazarus"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="io.github.albatrossmicrosystems.lazarus.permission.CONTROL" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+
+    <application android:label="Lazarus" android:hasCode="true"
+        android:icon="@android:drawable/ic_lock_power_off"
+        android:allowBackup="false">
+        <meta-data android:name="xposedmodule" android:value="true" />
+        <meta-data android:name="xposeddescription"
+            android:value="Fake power-off that keeps your phone trackable: holding power only pretends to switch off; holding it again plays a fake reboot. Real power off is PIN-protected." />
+        <meta-data android:name="xposedminversion" android:value="93" />
+        <meta-data android:name="xposedscope" android:resource="@array/xposed_scope" />
+
+        <activity android:name=".MainActivity"
+            android:label="Lazarus"
+            android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault.DayNight">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- PIN-protected REAL power off / restart -->
+        <activity android:name=".PowerActivity"
+            android:label="Power off / Restart"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <service android:name=".PowerTile"
+            android:label="Real power off"
+            android:icon="@android:drawable/ic_lock_power_off"
+            android:exported="true"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+    </application>
+</manifest>

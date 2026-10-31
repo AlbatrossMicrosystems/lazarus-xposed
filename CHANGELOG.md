@@ -1,0 +1,18 @@
+# Changelog
+
+## 2.1 — first public release
+- In-app settings: master switch, hold times, silence/vibration, shutdown protection, fake reboot,
+  owner exit, dark-wake app list, and each managed system setting can be toggled.
+- Original values of changed system settings are recorded and restored when an option or Lazarus
+  is turned off, or when the app is uninstalled.
+- App ↔ hook control via a signature-protected broadcast; no ADB permission grants needed.
+- Status line in the app (active / hook count / boot-animation support).
+- One-tap root install of the boot-animation SELinux rule; dark fallback if it is missing.
+- Fake reboot no longer lights the lock screen at full brightness without the animation.
+
+## 2.0
+- Renamed to Lazarus.
+
+## 1.x (private)
+- Fake power-off, dark wake for FMD camera, fake reboot with boot animation, PIN-protected real
+  power off, hard-reset DND recovery, Android 16 power-key wake fix.
