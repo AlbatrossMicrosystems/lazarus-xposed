@@ -1,5 +1,7 @@
 # Lazarus
 
+*by **Niik***
+
 > **Play dead. Stay findable.**
 >
 > *Anti-theft for rooted Android: when a thief switches your phone off, it only looks off, and it keeps telling you where it is.*
