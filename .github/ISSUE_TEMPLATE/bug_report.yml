@@ -1,0 +1,63 @@
+name: Bug report
+description: Something does not work as described
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Security problems must not be reported here**. See SECURITY.md.
+  - type: input
+    id: device
+    attributes:
+      label: Device and ROM
+      placeholder: "Redmi Note 9 Pro (curtana), crDroid 12.13"
+    validations:
+      required: true
+  - type: input
+    id: android
+    attributes:
+      label: Android version
+      placeholder: "16"
+    validations:
+      required: true
+  - type: input
+    id: framework
+    attributes:
+      label: Root and Xposed framework versions
+      placeholder: "Magisk 31.1, Vector 2.0"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Lazarus version and status line
+      description: Shown at the top of the Lazarus app.
+      placeholder: "2.2, ● Active (hooks 14/14)"
+    validations:
+      required: true
+  - type: dropdown
+    id: sepolicy
+    attributes:
+      label: Boot-animation support (lazarus_sepolicy) installed?
+      options:
+        - "Yes"
+        - "No"
+        - "Not sure"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: Steps to reproduce, what you expected, and what actually happened.
+      placeholder: |
+        1. Hold power 1.5 s
+        2. ...
+        Expected: ...
+        Actual: ...
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Module log
+      description: "Vector/LSPosed → Logs, or /data/adb/lspd/log/modules_*.log (lines tagged Lazarus)."
+      render: text

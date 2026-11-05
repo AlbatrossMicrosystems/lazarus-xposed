@@ -132,6 +132,11 @@ On first build, a release key is created in `~/.lazarus/` (outside the repo). **
 updates must be signed with the same key. The `stubs/` directory holds compile-only stand-ins for
 the Xposed API. They are not packaged.
 
+## Contributing
+
+Bug reports, ideas and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Please report security problems privately, as described in [SECURITY.md](SECURITY.md).
+
 ## License
 
 [GPL-3.0](LICENSE)
