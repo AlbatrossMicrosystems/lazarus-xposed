@@ -1,5 +1,6 @@
 # Lazarus
 
+[![Store downloads](https://img.shields.io/github/downloads/Xposed-Modules-Repo/io.github.albatrossmicrosystems.lazarus/total?label=Store%20downloads&color=2ea043&cacheSeconds=1800)](https://modules.lsposed.org/module/io.github.albatrossmicrosystems.lazarus/) [![GitHub downloads](https://img.shields.io/github/downloads/AlbatrossMicrosystems/lazarus-xposed/total?label=GitHub%20downloads&color=0969da&cacheSeconds=1800)](https://github.com/AlbatrossMicrosystems/lazarus-xposed/releases/latest)
 *by **Niik***
 
 > **Play dead. Stay findable.**
