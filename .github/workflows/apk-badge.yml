@@ -1,0 +1,56 @@
+# Counts APK downloads across the GitHub release and the Vector/LSPosed Store release,
+# and publishes the total as a shields.io endpoint badge on the `badges` branch.
+name: APK download badge
+
+on:
+  schedule:
+    - cron: "23 * * * *"   # hourly
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-badge
+
+jobs:
+  badge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/badges
+
+      - name: Count APK downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count() {
+            gh api --paginate "repos/$1/releases?per_page=100" \
+              --jq '.[].assets[] | select(.name | endswith(".apk")) | .download_count' |
+              awk '{ s += $1 } END { print s + 0 }'
+          }
+          store=$(count Xposed-Modules-Repo/io.github.albatrossmicrosystems.lazarus)
+          github=$(count "$GITHUB_REPOSITORY")
+          total=$((store + github))
+          echo "APK downloads: Store $store + GitHub $github = **$total**" >> "$GITHUB_STEP_SUMMARY"
+
+          mkdir -p out
+          jq -n --arg total "$total" --arg svg "$(cat .github/badges/android.svg)" \
+            '{schemaVersion: 1, label: "APK downloads", message: $total,
+              color: "a371f7", logoSvg: $svg, cacheSeconds: 1800}' > out/apk-downloads.json
+          cat out/apk-downloads.json
+
+      - name: Publish to badges branch
+        run: |
+          old=$(curl -fsSL "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/badges/apk-downloads.json" || true)
+          if [ "$old" = "$(cat out/apk-downloads.json)" ]; then echo "No change."; exit 0; fi
+          cd out
+          git init -q -b badges
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apk-downloads.json
+          git commit -q -m "Update APK download badge"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/$GITHUB_REPOSITORY" badges
