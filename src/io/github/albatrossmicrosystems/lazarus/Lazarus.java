@@ -258,7 +258,8 @@ public class Lazarus implements IXposedHookLoadPackage {
                         String k = i.getStringExtra(Keys.EXTRA_KEY), v = i.getStringExtra(Keys.EXTRA_VALUE);
                         if (k != null && Keys.isKnown(k)) {
                             Settings.Global.putString(cr, Keys.CFG + k, v);   // observer applies it
-                            log("config " + k + "=" + v);
+                            // the secret sequence must not end up in logs people attach to bug reports
+                            log("config " + k + "=" + (Keys.C_EXIT_SEQ.equals(k) ? "<hidden>" : v));
                         }
                     }
                 } catch (Throwable t) { log("control: " + t); }
