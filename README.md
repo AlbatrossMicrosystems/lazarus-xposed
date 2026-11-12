@@ -92,7 +92,7 @@ Settings → **Owner exit** → **Button combination**:
 | Hold Vol-Up + Vol-Down | Hold both for the hold time (default 3 s) | Default. |
 | Hold Vol-Up | Hold Vol-Up alone | A single key is easier to hold by accident. |
 | Hold Vol-Down | Hold Vol-Down alone | Same as above. |
-| Hold Power + Vol-Up | Press Vol-Up, then Power, hold both | The fake restart does not start while Vol-Up is held. Holding power alone still plays the fake restart. |
+| Hold Power + Vol-Up | Press Vol-Up, then Power, hold both | The fake restart does not start while Vol-Up is held. Holding power alone still plays the fake restart. The hold time is capped at 5 s, below the hardware reset. |
 | Secret volume sequence | Press e.g. `UUDD` (Up, Up, Down, Down) | 3–8 presses, at most 2 s apart. Pressing power starts over. Exits immediately, no holding. |
 
 Power + Vol-Down is not offered: on many phones it is a hardware reset combo. If the secret

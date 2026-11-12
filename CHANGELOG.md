@@ -3,8 +3,10 @@
 ## 2.3
 - Owner exit button combination is now selectable: hold Vol-Up + Vol-Down (default), hold Vol-Up,
   hold Vol-Down, hold Power + Vol-Up, or a secret Vol-Up / Vol-Down press sequence (3–8 presses).
-- Power + Vol-Up cancels the fake reboot timer while it is held. An invalid secret sequence falls
-  back to Vol-Up + Vol-Down, so the owner cannot be locked out.
+- Power + Vol-Up cancels the fake reboot timer while it is held, and its hold time is capped at
+  5 s so it always ends before the hardware reset. An invalid secret sequence falls back to
+  Vol-Up + Vol-Down, so the owner cannot be locked out.
+- The secret sequence is never written to the module log.
 - The in-app guide shows the configured owner exit gesture.
 
 ## 2.2 — first public release
