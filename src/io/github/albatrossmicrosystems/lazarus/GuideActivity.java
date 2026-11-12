@@ -101,7 +101,8 @@ public class GuideActivity extends Activity {
         row("Hold power ~1.5 s", "Fake power-off: one buzz, then the phone looks dead.");
         row("While \"off\": press power, tap the screen, call it", "Nothing happens. It stays dark and silent.");
         row("While \"off\": hold power ~3 s", "Fake restart: buzz → boot animation → lock screen.");
-        row("While \"off\": hold Vol-Up + Vol-Down ~3 s", "Owner exit: wakes up normally.");
+        String exit = exitGesture();
+        row("While \"off\": " + exit, "Owner exit: wakes up normally. (Change the combination in Settings → Owner exit.)");
         row("Power menu / apps try to shut down", "Becomes a fake power-off instead.");
         row("Lazarus app → Power off / Restart", "REAL power off / restart. Asks for your PIN; fingerprint is not accepted.");
 
@@ -109,7 +110,7 @@ public class GuideActivity extends Activity {
         section("3 · Try it now (2 minutes)");
         para("1. Hold power about 1.5 seconds. You feel one buzz and the screen goes black.\n"
                 + "2. Press power a few times, tap the screen. Nothing should happen.\n"
-                + "3. Hold Vol-Up + Vol-Down together for 3 seconds. The phone wakes up.\n"
+                + "3. " + cap(exit) + ". The phone wakes up.\n"
                 + "4. Hold power 1.5 s again, then hold power about 3 seconds. The boot animation appears; "
                 + "let go. After ~17 s you see the lock screen and the phone is back to normal.\n"
                 + "5. Open your tracking app's website and locate the phone while it is \"off\".");
@@ -128,7 +129,7 @@ public class GuideActivity extends Activity {
 
         // ---------------------------------------------------------------- recovery
         section("5 · If something goes wrong");
-        para("• Stuck dark: hold Vol-Up + Vol-Down 3 s, or from a computer run\n"
+        para("• Stuck dark: " + exit + ", or from a computer run\n"
                 + "  adb shell settings put global lazarus_cmd exit\n"
                 + "• Turn Lazarus off in its settings (master switch). All changed system settings are restored.\n"
                 + "• Disable the module in Vector and reboot.\n"
@@ -137,6 +138,25 @@ public class GuideActivity extends Activity {
 
         root.addView(button("Open settings", v -> { startActivity(new Intent(this, MainActivity.class)); finish(); }));
     }
+
+    // ------------------------------------------------------------------ owner exit
+    /** The configured owner exit gesture; never spells out the secret sequence. */
+    private String exitGesture() {
+        if (cfg(Keys.C_OWNER_EXIT) != 1) return "(owner exit is turned off in Settings)";
+        int combo = cfg(Keys.C_EXIT_COMBO);
+        if (combo == Keys.EXIT_SEQUENCE) {
+            String seq = Settings.Global.getString(getContentResolver(), Keys.CFG + Keys.C_EXIT_SEQ);
+            if (Keys.validSeq(seq == null ? Keys.DEF_EXIT_SEQ : seq) != null) return "press your secret volume sequence";
+        }
+        return Keys.exitGesture(combo, null, cfg(Keys.C_HOLD_EXIT));
+    }
+
+    private int cfg(String key) {
+        try { return Keys.clamp(key, Settings.Global.getInt(getContentResolver(), Keys.CFG + key, Keys.def(key))); }
+        catch (Throwable t) { return Keys.def(key); }
+    }
+
+    private static String cap(String s) { return s.isEmpty() ? s : Character.toUpperCase(s.charAt(0)) + s.substring(1); }
 
     // ------------------------------------------------------------------ checks
     private boolean isActive() {
