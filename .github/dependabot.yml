@@ -1,0 +1,13 @@
+# Keeps the GitHub Actions used by our workflows up to date. Lazarus has no other dependencies
+# (plain Java, no Gradle), so this is the only ecosystem to watch.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "CI"
