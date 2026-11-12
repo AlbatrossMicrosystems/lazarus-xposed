@@ -33,6 +33,7 @@ final class Keys {
     static final String C_BOOT_ANIM      = "boot_anim_ms";
     static final String C_OWNER_EXIT     = "owner_exit";
     static final String C_HOLD_EXIT      = "hold_exit_ms";
+    static final String C_EXIT_COMBO     = "exit_combo";      // EXIT_* below
     static final String C_BLOCK_SHUTDOWN = "block_shutdown";
     static final String C_SILENCE        = "silence";
     static final String C_NO_VIBRATE     = "block_vibration";
@@ -40,9 +41,53 @@ final class Keys {
     static final String C_M_CAMERA       = "manage_camera_gesture";
     static final String C_M_LOCK_MENU    = "manage_lockscreen_power_menu";
     static final String C_M_QS_MENU      = "manage_qs_power_menu";
-    // ---- string option
+    // ---- string options
     static final String C_DARK_PKGS      = "dark_wake_pkgs";
     static final String DEF_DARK_PKGS    = "de.nulide.findmydevice";
+    static final String C_EXIT_SEQ       = "exit_sequence";   // U = Vol-Up, D = Vol-Down, e.g. "UUDD"
+    static final String DEF_EXIT_SEQ     = "UUDD";
+
+    // ---- owner exit combos (C_EXIT_COMBO). Power + Vol-Down is deliberately missing: on many
+    // phones it is a hardware reset combo.
+    static final int EXIT_BOTH_VOL   = 0;   // hold Vol-Up + Vol-Down
+    static final int EXIT_VOL_UP     = 1;   // hold Vol-Up alone
+    static final int EXIT_VOL_DOWN   = 2;   // hold Vol-Down alone
+    static final int EXIT_PWR_VOL_UP = 3;   // hold Power + Vol-Up
+    static final int EXIT_SEQUENCE   = 4;   // press a secret Vol-Up / Vol-Down sequence
+    static final String[] EXIT_LABELS = {
+        "Hold Vol-Up + Vol-Down",
+        "Hold Vol-Up",
+        "Hold Vol-Down",
+        "Hold Power + Vol-Up",
+        "Secret volume sequence",
+    };
+    static final int SEQ_MIN = 3, SEQ_MAX = 8;
+    static final long SEQ_GAP_MS = 2000;  // max pause between two presses of the sequence
+
+    /** Upper-cased sequence if it is usable (only U/D, SEQ_MIN..SEQ_MAX long), else null. */
+    static String validSeq(String s) {
+        if (s == null) return null;
+        s = s.trim().toUpperCase();
+        if (s.length() < SEQ_MIN || s.length() > SEQ_MAX) return null;
+        for (int i = 0; i < s.length(); i++) if (s.charAt(i) != 'U' && s.charAt(i) != 'D') return null;
+        return s;
+    }
+
+    /** Human description of the owner exit gesture, e.g. "hold Vol-Up + Vol-Down ~3 s". */
+    static String exitGesture(int combo, String seq, int holdMs) {
+        String secs = "~" + (holdMs % 1000 == 0 ? String.valueOf(holdMs / 1000) : String.valueOf(holdMs / 1000.0)) + " s";
+        if (combo == EXIT_SEQUENCE) {
+            String v = validSeq(seq);
+            if (v != null) {
+                StringBuilder sb = new StringBuilder("press ");
+                for (int i = 0; i < v.length(); i++) sb.append(i == 0 ? "" : ", ").append(v.charAt(i) == 'U' ? "Up" : "Down");
+                return sb.append(" on the volume keys").toString();
+            }
+            combo = EXIT_BOTH_VOL;                               // invalid sequence: hook falls back
+        }
+        if (combo < 0 || combo >= EXIT_LABELS.length) combo = EXIT_BOTH_VOL;
+        return EXIT_LABELS[combo].replace("Hold", "hold") + " " + secs;
+    }
 
     static final Object[][] INTS = {
         { C_ENABLED,        1,     0,     1 },
@@ -52,6 +97,7 @@ final class Keys {
         { C_BOOT_ANIM,      15500, 3000,  30000 },
         { C_OWNER_EXIT,     1,     0,     1 },
         { C_HOLD_EXIT,      3000,  1000,  10000 },
+        { C_EXIT_COMBO,     EXIT_BOTH_VOL, 0, EXIT_SEQUENCE },
         { C_BLOCK_SHUTDOWN, 1,     0,     1 },
         { C_SILENCE,        1,     0,     1 },
         { C_NO_VIBRATE,     1,     0,     1 },
@@ -71,7 +117,9 @@ final class Keys {
         if (s == null) return v;
         return Math.max((Integer) s[2], Math.min((Integer) s[3], v));
     }
-    static boolean isKnown(String name) { return spec(name) != null || C_DARK_PKGS.equals(name); }
+    static boolean isKnown(String name) {
+        return spec(name) != null || C_DARK_PKGS.equals(name) || C_EXIT_SEQ.equals(name);
+    }
 
     /**
      * System settings Lazarus changes while enabled, with the value it needs.
