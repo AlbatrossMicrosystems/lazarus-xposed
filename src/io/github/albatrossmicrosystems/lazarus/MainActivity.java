@@ -30,7 +30,9 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.IntConsumer;
 
@@ -42,6 +44,7 @@ public class MainActivity extends Activity {
     private LinearLayout seqBox;
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final Map<String, String> sent = new HashMap<>();
+    private final List<View> holdViews = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle b) {
@@ -122,7 +125,9 @@ public class MainActivity extends Activity {
         seqBox.addView(seq);
         seqBox.addView(hint("Pick something a stranger would not press by chance. Avoid UUUU / DDDD."));
         root.addView(seqBox);
+        int n = root.getChildCount();
         number(Keys.C_HOLD_EXIT, "Hold time (ms)");
+        for (int i = n; i < root.getChildCount(); i++) holdViews.add(root.getChildAt(i));
         updateExitInfo();
 
         header("Dark wake");
@@ -183,7 +188,9 @@ public class MainActivity extends Activity {
                 s += " At most 2 s between presses; pressing power starts over."; break;
         }
         exitInfo.setText(s);
-        if (seqBox != null) seqBox.setVisibility(combo == Keys.EXIT_SEQUENCE ? View.VISIBLE : View.GONE);
+        boolean seq = combo == Keys.EXIT_SEQUENCE;
+        if (seqBox != null) seqBox.setVisibility(seq ? View.VISIBLE : View.GONE);
+        for (View v : holdViews) v.setVisibility(seq ? View.GONE : View.VISIBLE);   // a sequence is not held
     }
 
     private void commitSeq(EditText e) {
