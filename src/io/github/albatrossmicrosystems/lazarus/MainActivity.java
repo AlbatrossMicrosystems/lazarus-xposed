@@ -177,7 +177,8 @@ public class MainActivity extends Activity {
             case Keys.EXIT_VOL_UP: case Keys.EXIT_VOL_DOWN:
                 s += " A single key is easier for someone else to hold by accident."; break;
             case Keys.EXIT_PWR_VOL_UP:
-                s += " Press Vol-Up first, then Power, and hold both. Holding power alone still plays the fake reboot."; break;
+                s += " Press Vol-Up first, then Power, and hold both. Holding power alone still plays the fake reboot. "
+                        + "Hold time is capped at " + Keys.PWR_COMBO_MAX_HOLD / 1000 + " s, below the hardware reset."; break;
             case Keys.EXIT_SEQUENCE:
                 s += " At most 2 s between presses; pressing power starts over."; break;
         }

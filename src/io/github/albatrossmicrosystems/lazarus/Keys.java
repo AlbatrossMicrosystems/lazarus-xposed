@@ -61,6 +61,12 @@ final class Keys {
         "Hold Power + Vol-Up",
         "Secret volume sequence",
     };
+    // Power is part of EXIT_PWR_VOL_UP, so its hold must end well before the hardware reset that
+    // many phones trigger after ~6-10 s of holding power.
+    static final int PWR_COMBO_MAX_HOLD = 5000;
+    static int exitHoldMs(int combo, int holdMs) {
+        return combo == EXIT_PWR_VOL_UP ? Math.min(holdMs, PWR_COMBO_MAX_HOLD) : holdMs;
+    }
     static final int SEQ_MIN = 3, SEQ_MAX = 8;
     static final long SEQ_GAP_MS = 2000;  // max pause between two presses of the sequence
 
@@ -75,7 +81,6 @@ final class Keys {
 
     /** Human description of the owner exit gesture, e.g. "hold Vol-Up + Vol-Down ~3 s". */
     static String exitGesture(int combo, String seq, int holdMs) {
-        String secs = "~" + (holdMs % 1000 == 0 ? String.valueOf(holdMs / 1000) : String.valueOf(holdMs / 1000.0)) + " s";
         if (combo == EXIT_SEQUENCE) {
             String v = validSeq(seq);
             if (v != null) {
@@ -86,6 +91,8 @@ final class Keys {
             combo = EXIT_BOTH_VOL;                               // invalid sequence: hook falls back
         }
         if (combo < 0 || combo >= EXIT_LABELS.length) combo = EXIT_BOTH_VOL;
+        holdMs = exitHoldMs(combo, holdMs);
+        String secs = "~" + (holdMs % 1000 == 0 ? String.valueOf(holdMs / 1000) : String.valueOf(holdMs / 1000.0)) + " s";
         return EXIT_LABELS[combo].replace("Hold", "hold") + " " + secs;
     }
 

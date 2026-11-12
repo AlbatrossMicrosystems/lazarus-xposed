@@ -420,12 +420,14 @@ public class Lazarus implements IXposedHookLoadPackage {
 
     /** Arms / disarms the owner exit hold timer after a key state change in FAKE-OFF. */
     static void updateExit() {
-        boolean want = !booting && on(Keys.C_OWNER_EXIT) && exitComboHeld(exitCombo());
+        int combo = exitCombo();
+        boolean want = !booting && on(Keys.C_OWNER_EXIT) && exitComboHeld(combo);
         if (want && !exitArmed) {
             exitArmed = true;
+            int hold = Keys.exitHoldMs(combo, cfg(Keys.C_HOLD_EXIT));
             h.removeCallbacks(rebootRun);                        // Power + Vol-Up: the owner, not a reboot
-            wl.acquire(cfg(Keys.C_HOLD_EXIT) + 3000);
-            h.removeCallbacks(exitRun); h.postDelayed(exitRun, cfg(Keys.C_HOLD_EXIT));
+            wl.acquire(hold + 3000);
+            h.removeCallbacks(exitRun); h.postDelayed(exitRun, hold);
         } else if (!want && exitArmed) {
             exitArmed = false;
             h.removeCallbacks(exitRun);
