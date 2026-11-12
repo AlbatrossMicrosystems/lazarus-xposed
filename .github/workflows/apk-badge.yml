@@ -1,6 +1,9 @@
-# Counts APK downloads across the GitHub release and the Vector/LSPosed Store release,
-# and publishes the total as a shields.io endpoint badge on the `badges` branch.
-name: APK download badge
+# Counts downloads of the GitHub release and the Vector/LSPosed Store release, and
+# publishes them as shields.io endpoint badges on the `badges` branch:
+#   apk-downloads.json    APK downloads, Store + GitHub
+#   store-downloads.json  every Store release asset (counted here so the badge does not
+#                         depend on shields.io querying GitHub live)
+name: Download badges
 
 on:
   schedule:
@@ -23,34 +26,46 @@ jobs:
         with:
           sparse-checkout: .github/badges
 
-      - name: Count APK downloads
+      - name: Count downloads
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # count <repo> <jq asset filter>
           count() {
             gh api --paginate "repos/$1/releases?per_page=100" \
-              --jq '.[].assets[] | select(.name | endswith(".apk")) | .download_count' |
+              --jq ".[].assets[] | select($2) | .download_count" |
               awk '{ s += $1 } END { print s + 0 }'
           }
-          store=$(count Xposed-Modules-Repo/io.github.albatrossmicrosystems.lazarus)
-          github=$(count "$GITHUB_REPOSITORY")
+          STORE=Xposed-Modules-Repo/io.github.albatrossmicrosystems.lazarus
+          store=$(count "$STORE" '.name | endswith(".apk")')
+          github=$(count "$GITHUB_REPOSITORY" '.name | endswith(".apk")')
+          store_all=$(count "$STORE" 'true')
           total=$((store + github))
           echo "APK downloads: Store $store + GitHub $github = **$total**" >> "$GITHUB_STEP_SUMMARY"
+          echo "Store downloads (all assets): **$store_all**" >> "$GITHUB_STEP_SUMMARY"
 
           mkdir -p out
           jq -n --arg total "$total" --arg svg "$(cat .github/badges/android.svg)" \
             '{schemaVersion: 1, label: "APK downloads", message: $total,
               color: "a371f7", logoSvg: $svg, cacheSeconds: 1800}' > out/apk-downloads.json
-          cat out/apk-downloads.json
+          jq -n --arg total "$store_all" --arg svg "$(cat .github/badges/power.svg)" \
+            '{schemaVersion: 1, label: "Store downloads", message: $total,
+              color: "2ea043", logoSvg: $svg, cacheSeconds: 1800}' > out/store-downloads.json
+          cat out/apk-downloads.json out/store-downloads.json
 
       - name: Publish to badges branch
         run: |
-          old=$(curl -fsSL "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/badges/apk-downloads.json" || true)
-          if [ "$old" = "$(cat out/apk-downloads.json)" ]; then echo "No change."; exit 0; fi
+          raw="https://raw.githubusercontent.com/$GITHUB_REPOSITORY/badges"
+          changed=0
+          for f in apk-downloads.json store-downloads.json; do
+            old=$(curl -fsSL "$raw/$f" || true)
+            [ "$old" = "$(cat "out/$f")" ] || changed=1
+          done
+          if [ "$changed" = 0 ]; then echo "No change."; exit 0; fi
           cd out
           git init -q -b badges
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apk-downloads.json
-          git commit -q -m "Update APK download badge"
+          git add apk-downloads.json store-downloads.json
+          git commit -q -m "Update download badges"
           git push -qf "https://x-access-token:${{ github.token }}@github.com/$GITHUB_REPOSITORY" badges
