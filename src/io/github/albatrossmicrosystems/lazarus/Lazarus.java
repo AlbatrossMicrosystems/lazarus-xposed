@@ -33,7 +33,8 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
  *  NORMAL   : hold POWER (1.5s)                -> FAKE-OFF
  *  FAKE-OFF : keys / touch / every wake source  -> swallowed, the screen never turns on
  *             hold POWER (3s)                   -> FAKE reboot (boot animation, then lock screen)
- *             hold VOL-UP + VOL-DOWN (3s)       -> owner exit back to NORMAL
+ *             owner exit combo                  -> back to NORMAL
+ *               (default: hold VOL-UP + VOL-DOWN 3s; see Keys.EXIT_* for the alternatives)
  *  Power-off requests (menus, apps)             -> FAKE-OFF instead (battery/thermal shutdowns allowed)
  *  Allow-listed apps (default: FMD) may wake the panel with the backlight forced OFF ("dark wake").
  *
@@ -370,7 +371,35 @@ public class Lazarus implements IXposedHookLoadPackage {
     // ================================================================== keys
     static final Runnable offRun    = () -> enterFake("power hold");
     static final Runnable rebootRun = Lazarus::fakeReboot;
-    static final Runnable exitRun   = () -> exitFake("owner combo");
+    static final Runnable exitRun   = () -> { exitArmed = false; exitFake("owner combo"); };
+    static volatile boolean exitArmed;                         // owner exit hold timer running
+
+    /** The owner exit combo in effect (Keys.EXIT_*). */
+    static int exitCombo() {
+        return cfg(Keys.C_EXIT_COMBO);
+    }
+
+    /** Is the chosen hold combo held right now (and nothing that would make it ambiguous)? */
+    static boolean exitComboHeld(int combo) {
+        switch (combo) {
+            case Keys.EXIT_VOL_UP:   return vuDown && !vdDown && !pwrDown;
+            case Keys.EXIT_VOL_DOWN: return vdDown && !vuDown && !pwrDown;
+            default:                 return vuDown && vdDown;
+        }
+    }
+
+    /** Arms / disarms the owner exit hold timer after a key state change in FAKE-OFF. */
+    static void updateExit() {
+        boolean want = !booting && on(Keys.C_OWNER_EXIT) && exitComboHeld(exitCombo());
+        if (want && !exitArmed) {
+            exitArmed = true;
+            wl.acquire(cfg(Keys.C_HOLD_EXIT) + 3000);
+            h.removeCallbacks(exitRun); h.postDelayed(exitRun, cfg(Keys.C_HOLD_EXIT));
+        } else if (!want && exitArmed) {
+            exitArmed = false;
+            h.removeCallbacks(exitRun);
+        }
+    }
 
     static void onKey(XC_MethodHook.MethodHookParam p) {
         if (!ready) return;
@@ -379,35 +408,29 @@ public class Lazarus implements IXposedHookLoadPackage {
         int code = ev.getKeyCode();
         boolean down = ev.getAction() == KeyEvent.ACTION_DOWN;
         boolean first = down && ev.getRepeatCount() == 0;
+        boolean pwr = code == KeyEvent.KEYCODE_POWER;
+        boolean vu  = code == KeyEvent.KEYCODE_VOLUME_UP;
+        boolean vd  = code == KeyEvent.KEYCODE_VOLUME_DOWN;
 
         synchronized (Lazarus.class) {
-            if (code == KeyEvent.KEYCODE_POWER) {
-                if (first) {
-                    pwrDown = true;
-                    wl.acquire(10000);                           // timers must survive deep sleep
-                    h.removeCallbacks(offRun); h.removeCallbacks(rebootRun);
-                    if (fake) {
-                        if (!booting && on(Keys.C_FAKE_REBOOT)) h.postDelayed(rebootRun, cfg(Keys.C_HOLD_REBOOT));
-                    } else if (!vuDown && !vdDown) {
-                        h.postDelayed(offRun, cfg(Keys.C_HOLD_OFF));
-                    }
-                } else if (!down) {
-                    pwrDown = false;
-                    h.removeCallbacks(offRun); h.removeCallbacks(rebootRun);
-                    if (!vuDown && !vdDown) releaseWl();
+            if (pwr || vu || vd) {
+                // key state: only the first DOWN and the UP change it, auto-repeats do not
+                if (first || !down) {
+                    if (pwr) pwrDown = down; else if (vu) vuDown = down; else vdDown = down;
                 }
-            } else if (code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN) {
-                if (code == KeyEvent.KEYCODE_VOLUME_UP) vuDown = down; else vdDown = down;
-                if (down) h.removeCallbacks(offRun);             // power+volume combos are not ours in NORMAL
-                if (fake && !booting && vuDown && vdDown && on(Keys.C_OWNER_EXIT)) {
-                    if (first) {
-                        wl.acquire(cfg(Keys.C_HOLD_EXIT) + 3000);
-                        h.removeCallbacks(exitRun); h.postDelayed(exitRun, cfg(Keys.C_HOLD_EXIT));
-                    }
-                } else {
-                    h.removeCallbacks(exitRun);
-                    if (!pwrDown && !vuDown && !vdDown) releaseWl();
+                if (first && (pwr || fake)) wl.acquire(10000);  // timers must survive deep sleep
+
+                if (pwr && (first || !down)) { h.removeCallbacks(offRun); h.removeCallbacks(rebootRun); }
+                if ((vu || vd) && down) h.removeCallbacks(offRun); // power+volume combos are not ours in NORMAL
+
+                if (fake) {
+                    updateExit();
+                    if (pwr && first && !booting && !exitArmed && on(Keys.C_FAKE_REBOOT))
+                        h.postDelayed(rebootRun, cfg(Keys.C_HOLD_REBOOT));
+                } else if (pwr && first && !vuDown && !vdDown) {
+                    h.postDelayed(offRun, cfg(Keys.C_HOLD_OFF));
                 }
+                if (!pwrDown && !vuDown && !vdDown) releaseWl();
             }
 
             if (fake) {
@@ -441,6 +464,7 @@ public class Lazarus implements IXposedHookLoadPackage {
         if (!fake) return;
         cancelBoot();
         h.removeCallbacks(darkEnd);
+        h.removeCallbacks(exitRun); exitArmed = false;
         allowWake = false;
         boolean wasAwake = pm.isInteractive();                  // dark wake in progress
         fake = false;
