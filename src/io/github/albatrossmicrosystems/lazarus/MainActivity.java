@@ -17,6 +17,8 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -27,13 +29,17 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.IntConsumer;
 
 /** Settings screen. Values are read from Settings.Global and changed via the hook (broadcast). */
 public class MainActivity extends Activity {
 
     private LinearLayout root;
-    private TextView status;
+    private TextView status, exitInfo;
     private final Handler ui = new Handler(Looper.getMainLooper());
+    private final Map<String, String> sent = new HashMap<>();
 
     @Override
     protected void onCreate(Bundle b) {
@@ -97,8 +103,13 @@ public class MainActivity extends Activity {
         root.addView(anim);
 
         header("Owner exit (while fake-off)");
-        toggle(Keys.C_OWNER_EXIT, "Hold Vol-Up + Vol-Down to wake", null);
+        toggle(Keys.C_OWNER_EXIT, "Owner exit: wake from fake power-off", null);
+        root.addView(text("Button combination", 14, false));
+        exitInfo = hint("");
+        choice(Keys.C_EXIT_COMBO, Keys.EXIT_LABELS, i -> updateExitInfo());
+        root.addView(exitInfo);
         number(Keys.C_HOLD_EXIT, "Hold time (ms)");
+        updateExitInfo();
 
         header("Dark wake");
         textPref(Keys.C_DARK_PKGS, Keys.DEF_DARK_PKGS, "Apps allowed to use the screen invisibly while off",
@@ -139,17 +150,39 @@ public class MainActivity extends Activity {
         status.setText(sb);
     }
 
+    private int getInt(String key) {
+        try { return Keys.clamp(key, Integer.parseInt(get(key, String.valueOf(Keys.def(key))).trim())); }
+        catch (NumberFormatException e) { return Keys.def(key); }
+    }
+
+    /** Describes the selected owner exit gesture and its catch. */
+    private void updateExitInfo() {
+        int combo = getInt(Keys.C_EXIT_COMBO);
+        String s = "To wake: " + Keys.exitGesture(combo, get(Keys.C_EXIT_SEQ, Keys.DEF_EXIT_SEQ), getInt(Keys.C_HOLD_EXIT)) + ".";
+        switch (combo) {
+            case Keys.EXIT_VOL_UP: case Keys.EXIT_VOL_DOWN:
+                s += " A single key is easier for someone else to hold by accident."; break;
+            case Keys.EXIT_PWR_VOL_UP:
+                s += " Press Vol-Up first, then Power, and hold both. Holding power alone still plays the fake reboot."; break;
+            case Keys.EXIT_SEQUENCE:
+                s += " At most 2 s between presses; pressing power starts over."; break;
+        }
+        exitInfo.setText(s);
+    }
+
     private void startPower(String cmd) {
         startActivity(new Intent(this, PowerActivity.class).putExtra(Keys.EXTRA_CMD, cmd));
     }
 
     private void set(String key, String value) {
+        sent.put(key, value);
         sendBroadcast(new Intent(Keys.ACTION_SET).putExtra(Keys.EXTRA_KEY, key).putExtra(Keys.EXTRA_VALUE, value));
         ui.postDelayed(this::refreshStatus, 400);
     }
 
     private String get(String key, String def) {
-        String v = Settings.Global.getString(getContentResolver(), Keys.CFG + key);
+        // the hook writes Settings.Global asynchronously: prefer what this screen just sent
+        String v = sent.containsKey(key) ? sent.get(key) : Settings.Global.getString(getContentResolver(), Keys.CFG + key);
         return v == null ? def : v;
     }
 
@@ -220,9 +253,31 @@ public class MainActivity extends Activity {
             int v = Keys.clamp(key, Integer.parseInt(e.getText().toString().trim()));
             e.setText(String.valueOf(v));
             set(key, String.valueOf(v));
+            if (Keys.C_HOLD_EXIT.equals(key)) updateExitInfo();
         } catch (NumberFormatException ex) {
             e.setText(get(key, String.valueOf(Keys.def(key))));
         }
+    }
+
+    /** Single choice stored as the option index. */
+    private void choice(String key, String[] labels, IntConsumer onPick) {
+        RadioGroup g = new RadioGroup(this);
+        int cur = getInt(key);
+        for (int i = 0; i < labels.length; i++) {
+            RadioButton rb = new RadioButton(this);
+            rb.setId(View.generateViewId());
+            rb.setText(labels[i]);
+            rb.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+            g.addView(rb);
+            if (i == cur) rb.setChecked(true);
+        }
+        g.setOnCheckedChangeListener((group, id) -> {
+            int i = group.indexOfChild(group.findViewById(id));
+            if (i < 0) return;
+            set(key, String.valueOf(i));
+            if (onPick != null) onPick.accept(i);
+        });
+        root.addView(g);
     }
 
     private void textPref(String key, String def, String label, String hint) {
