@@ -22,6 +22,7 @@ import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -38,6 +39,7 @@ public class MainActivity extends Activity {
 
     private LinearLayout root;
     private TextView status, exitInfo;
+    private LinearLayout seqBox;
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final Map<String, String> sent = new HashMap<>();
 
@@ -108,6 +110,18 @@ public class MainActivity extends Activity {
         exitInfo = hint("");
         choice(Keys.C_EXIT_COMBO, Keys.EXIT_LABELS, i -> updateExitInfo());
         root.addView(exitInfo);
+        seqBox = new LinearLayout(this);
+        seqBox.setOrientation(LinearLayout.VERTICAL);
+        seqBox.addView(text("Secret sequence (U = Vol-Up, D = Vol-Down)", 14, false));
+        EditText seq = new EditText(this);
+        seq.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+        seq.setText(get(Keys.C_EXIT_SEQ, Keys.DEF_EXIT_SEQ));
+        seq.setHint(Keys.SEQ_MIN + "–" + Keys.SEQ_MAX + " letters, e.g. UUDU");
+        seq.setOnFocusChangeListener((v, has) -> { if (!has) commitSeq(seq); });
+        seq.setOnEditorActionListener((v, a, ev) -> { commitSeq(seq); return false; });
+        seqBox.addView(seq);
+        seqBox.addView(hint("Pick something a stranger would not press by chance. Avoid UUUU / DDDD."));
+        root.addView(seqBox);
         number(Keys.C_HOLD_EXIT, "Hold time (ms)");
         updateExitInfo();
 
@@ -168,6 +182,19 @@ public class MainActivity extends Activity {
                 s += " At most 2 s between presses; pressing power starts over."; break;
         }
         exitInfo.setText(s);
+        if (seqBox != null) seqBox.setVisibility(combo == Keys.EXIT_SEQUENCE ? View.VISIBLE : View.GONE);
+    }
+
+    private void commitSeq(EditText e) {
+        String v = Keys.validSeq(e.getText().toString());
+        if (v == null) {
+            Toast.makeText(this, "Use " + Keys.SEQ_MIN + "–" + Keys.SEQ_MAX + " letters, only U and D", Toast.LENGTH_SHORT).show();
+            e.setText(get(Keys.C_EXIT_SEQ, Keys.DEF_EXIT_SEQ));
+            return;
+        }
+        e.setText(v);
+        if (!v.equals(get(Keys.C_EXIT_SEQ, Keys.DEF_EXIT_SEQ))) set(Keys.C_EXIT_SEQ, v);
+        updateExitInfo();
     }
 
     private void startPower(String cmd) {
