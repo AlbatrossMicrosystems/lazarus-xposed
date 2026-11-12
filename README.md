@@ -24,7 +24,7 @@ Lazarus is an Xposed module that runs inside `system_server`.
 |---|---|
 | **Fake power-off** | Hold power (default 1.5 s). Keys, touch and every wake source (calls, notifications, charger, fingerprint, double-tap) are swallowed. Optional total-silence Do Not Disturb and no vibration. |
 | **Fake reboot** | While fake-off, hold power (default 3 s): buzz → boot animation (~16 s) → lock screen. |
-| **Owner exit** | While fake-off, hold Vol-Up + Vol-Down (default 3 s) to wake normally. |
+| **Owner exit** | While fake-off, hold Vol-Up + Vol-Down (default 3 s) to wake normally. You can pick another combination: Vol-Up alone, Vol-Down alone, Power + Vol-Up, or a secret Vol-Up / Vol-Down press sequence. |
 | **Shutdown protection** | Power-off requests from menus or apps become fake power-off. Low-battery and overheating shutdowns are still allowed. |
 | **Real power off for the owner** | App button or Quick Settings tile **"Real power off"**, protected by your **PIN/pattern/password**. Biometrics are not accepted, so nobody can force your finger onto the sensor. |
 | **Dark wake** | Allow-listed apps (default: FMD) may use the display while fake-off, e.g. for FMD's remote camera, with the backlight forced off. |
@@ -63,7 +63,7 @@ module active, boot-animation support, screen lock, and tracking app.
 | Hold power ~1.5 s | **Fake power-off**: one buzz, then the phone looks dead. |
 | While "off": press power, tap the screen, call the phone | Nothing. It stays dark and silent. |
 | While "off": hold power ~3 s | **Fake restart**: buzz → boot animation → lock screen. |
-| While "off": hold Vol-Up + Vol-Down ~3 s | **Owner exit**: the phone wakes up normally. |
+| While "off": hold Vol-Up + Vol-Down ~3 s (or your chosen combination) | **Owner exit**: the phone wakes up normally. |
 | Power menu or an app tries to shut down | Becomes a fake power-off. |
 | Lazarus → **Power off** / **Restart** (or the tile) | **Real** power off / restart, after your PIN. |
 
@@ -83,6 +83,22 @@ Every behaviour can be changed in the app: hold times, total silence, vibration,
 protection, fake restart, owner exit, the dark-wake app list, and which system settings Lazarus may
 change. The master switch turns Lazarus off completely and restores everything it changed.
 
+### Owner exit combinations
+
+Settings → **Owner exit** → **Button combination**:
+
+| Combination | How | Note |
+|---|---|---|
+| Hold Vol-Up + Vol-Down | Hold both for the hold time (default 3 s) | Default. |
+| Hold Vol-Up | Hold Vol-Up alone | A single key is easier to hold by accident. |
+| Hold Vol-Down | Hold Vol-Down alone | Same as above. |
+| Hold Power + Vol-Up | Press Vol-Up, then Power, hold both | The fake restart does not start while Vol-Up is held. Holding power alone still plays the fake restart. |
+| Secret volume sequence | Press e.g. `UUDD` (Up, Up, Down, Down) | 3–8 presses, at most 2 s apart. Pressing power starts over. Exits immediately, no holding. |
+
+Power + Vol-Down is not offered: on many phones it is a hardware reset combo. If the secret
+sequence is ever invalid, Lazarus falls back to holding Vol-Up + Vol-Down, so you cannot lock
+yourself out. `adb shell settings put global lazarus_cmd exit` always works.
+
 ## ⚠️ Read before use
 
 - **You can no longer switch the phone off with the power button.** Use the in-app **Power off**
@@ -96,7 +112,8 @@ change. The master switch turns Lazarus off completely and restores everything i
   reflash the phone through fastboot or recovery. Lazarus defeats the common "hold power to turn it
   off" move.
 - **Recovery** if something goes wrong:
-  - In fake-off: hold Vol-Up + Vol-Down, or run `adb shell settings put global lazarus_cmd exit`.
+  - In fake-off: use your owner exit combination (default: hold Vol-Up + Vol-Down), or run
+    `adb shell settings put global lazarus_cmd exit`.
   - Disable the module in Vector and reboot.
   - Boot into Android **safe mode** (hold Vol-Down during boot), which makes Magisk disable all modules.
 
@@ -109,6 +126,8 @@ adb shell settings put global lazarus_cmd shutdown   # real power off
 adb shell settings put global lazarus_cmd reboot     # real restart
 adb shell settings get global lazarus_state          # 1 = fake-off
 adb shell settings put global lazarus_cfg_<option> <value>   # see Keys.java for options
+adb shell settings put global lazarus_cfg_exit_combo 4       # 0 both vol, 1 vol-up, 2 vol-down, 3 power+vol-up, 4 sequence
+adb shell settings put global lazarus_cfg_exit_sequence UUDU # U = Vol-Up, D = Vol-Down, 3-8 presses
 ```
 
 Logs go to the Vector/LSPosed module log, tag `Lazarus`.
@@ -119,7 +138,8 @@ Logs go to the Vector/LSPosed module log, tag `Lazarus`.
   (`io.github.albatrossmicrosystems.lazarus.permission.CONTROL`). Only an app signed with the Lazarus key, `adb shell`
   (via `settings`), or root can send commands.
 - Configuration lives in `Settings.Global` (`lazarus_cfg_*`). Any app can read it; only
-  `system_server`, adb or root can write it.
+  `system_server`, adb or root can write it. This includes the secret exit sequence: it keeps a
+  stranger holding the phone out, not an app already installed on it.
 - Fake-off state lives in memory only, so every real boot starts in normal mode.
 
 ## Building
