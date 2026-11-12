@@ -384,6 +384,8 @@ public class Lazarus implements IXposedHookLoadPackage {
         switch (combo) {
             case Keys.EXIT_VOL_UP:   return vuDown && !vdDown && !pwrDown;
             case Keys.EXIT_VOL_DOWN: return vdDown && !vuDown && !pwrDown;
+            // never with Vol-Down: power + Vol-Down is a hardware reset on many phones
+            case Keys.EXIT_PWR_VOL_UP: return pwrDown && vuDown && !vdDown;
             default:                 return vuDown && vdDown;
         }
     }
@@ -393,6 +395,7 @@ public class Lazarus implements IXposedHookLoadPackage {
         boolean want = !booting && on(Keys.C_OWNER_EXIT) && exitComboHeld(exitCombo());
         if (want && !exitArmed) {
             exitArmed = true;
+            h.removeCallbacks(rebootRun);                        // Power + Vol-Up: the owner, not a reboot
             wl.acquire(cfg(Keys.C_HOLD_EXIT) + 3000);
             h.removeCallbacks(exitRun); h.postDelayed(exitRun, cfg(Keys.C_HOLD_EXIT));
         } else if (!want && exitArmed) {
