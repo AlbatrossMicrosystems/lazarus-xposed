@@ -110,7 +110,9 @@ public class GuideActivity extends Activity {
         section("3 · Try it now (2 minutes)");
         para("1. Hold power about 1.5 seconds. You feel one buzz and the screen goes black.\n"
                 + "2. Press power a few times, tap the screen. Nothing should happen.\n"
-                + "3. " + cap(exit) + ". The phone wakes up.\n"
+                + (cfg(Keys.C_OWNER_EXIT) == 1
+                    ? "3. " + cap(exit) + ". The phone wakes up.\n"
+                    : "3. Owner exit is off, so wake it from a computer: adb shell settings put global lazarus_cmd exit\n")
                 + "4. Hold power 1.5 s again, then hold power about 3 seconds. The boot animation appears; "
                 + "let go. After ~17 s you see the lock screen and the phone is back to normal.\n"
                 + "5. Open your tracking app's website and locate the phone while it is \"off\".");
