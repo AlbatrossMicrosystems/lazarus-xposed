@@ -374,9 +374,36 @@ public class Lazarus implements IXposedHookLoadPackage {
     static final Runnable exitRun   = () -> { exitArmed = false; exitFake("owner combo"); };
     static volatile boolean exitArmed;                         // owner exit hold timer running
 
-    /** The owner exit combo in effect (Keys.EXIT_*). */
+    /** The owner exit combo in effect (Keys.EXIT_*). An unusable sequence falls back to both volume keys. */
     static int exitCombo() {
-        return cfg(Keys.C_EXIT_COMBO);
+        int c = cfg(Keys.C_EXIT_COMBO);
+        if (c == Keys.EXIT_SEQUENCE && exitSeq() == null) return Keys.EXIT_BOTH_VOL;
+        return c;
+    }
+
+    static String exitSeq() {
+        String s = Settings.Global.getString(cr, Keys.CFG + Keys.C_EXIT_SEQ);
+        return Keys.validSeq(s == null ? Keys.DEF_EXIT_SEQ : s);
+    }
+
+    // secret sequence: the last presses (U / D / P = power), cleared after a pause
+    static final StringBuilder seqHist = new StringBuilder();
+    static long seqLast;
+
+    /** One key press in FAKE-OFF while the sequence combo is selected. */
+    static void seqPress(char c) {
+        long now = SystemClock.uptimeMillis();
+        if (now - seqLast > Keys.SEQ_GAP_MS) seqHist.setLength(0);
+        seqLast = now;
+        seqHist.append(c);
+        if (seqHist.length() > Keys.SEQ_MAX) seqHist.deleteCharAt(0);
+        String seq = exitSeq();
+        if (c != 'P' && seq != null && !booting && on(Keys.C_OWNER_EXIT) && seqHist.toString().endsWith(seq)) {
+            seqHist.setLength(0);
+            h.removeCallbacks(rebootRun);
+            wl.acquire(3000);
+            h.post(() -> exitFake("secret sequence"));
+        }
     }
 
     /** Is the chosen hold combo held right now (and nothing that would make it ambiguous)? */
@@ -427,7 +454,11 @@ public class Lazarus implements IXposedHookLoadPackage {
                 if ((vu || vd) && down) h.removeCallbacks(offRun); // power+volume combos are not ours in NORMAL
 
                 if (fake) {
-                    updateExit();
+                    if (exitCombo() == Keys.EXIT_SEQUENCE) {
+                        if (first) seqPress(pwr ? 'P' : vu ? 'U' : 'D');   // a power press breaks it
+                    } else {
+                        updateExit();
+                    }
                     if (pwr && first && !booting && !exitArmed && on(Keys.C_FAKE_REBOOT))
                         h.postDelayed(rebootRun, cfg(Keys.C_HOLD_REBOOT));
                 } else if (pwr && first && !vuDown && !vdDown) {
