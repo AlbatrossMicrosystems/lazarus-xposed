@@ -34,6 +34,19 @@ form. Explain the theft scenario or problem the feature solves.
 4. Build and test on a real device (see below), and describe what you tested in the pull request.
 5. Add a line to [CHANGELOG.md](CHANGELOG.md) under a new *Unreleased* heading.
 
+### Automatic checks
+
+Every pull request gets:
+
+- **Build**: compiles the APK with `build.sh`, and checks that `magisk/` files use LF and that
+  the version in `AndroidManifest.xml` matches `Keys.VERSION`.
+- **CodeQL**: GitHub's security scan of the Java code and workflows.
+- **CodeRabbit**: an AI review with comments on the diff. Its rules are in
+  [`.coderabbit.yaml`](.coderabbit.yaml). Reply to a comment or mention `@coderabbitai` to discuss
+  it. Its suggestions are advice; a maintainer decides what gets merged.
+
+The build must pass before a pull request is merged.
+
 ### Rules for hook code
 
 - **Fail safe.** Every hook must catch its own errors and fall back to stock Android behaviour.

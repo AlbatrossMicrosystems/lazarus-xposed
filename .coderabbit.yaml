@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit AI review settings. Docs: https://docs.coderabbit.ai/reference/configuration
+language: en-US
+tone_instructions: >-
+  Be direct and specific. Lazarus hooks Android's system_server, so prioritise crashes, boot
+  loops, a blocked power key and security holes over style. Skip praise and nitpicks.
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  review_status: true
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: false
+  poem: false
+  in_progress_fortune: false
+  suggested_labels: false
+  suggested_reviewers: false
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches: ["main"]
+
+  path_filters:
+    - "!**/*.apk"
+    - "!**/*.idsig"
+    - "!LICENSE"
+    - "!.github/badges/**"
+
+  path_instructions:
+    - path: "src/**/Lazarus.java"
+      instructions: |
+        This code runs inside system_server through Xposed. An uncaught exception or a slow call
+        here can crash or freeze the whole phone. Check that:
+        - every hook catches its own Throwable and falls back to stock Android behaviour;
+        - nothing blocks the input/power-key path (no I/O, binder calls or sleeps on that thread);
+        - any system setting Lazarus changes stores its original in lazarus_orig_* and is restored
+          when the option, the module or the app is turned off or removed;
+        - low-battery and overheating shutdowns are never blocked;
+        - secrets such as the owner exit sequence are never written to the log.
+    - path: "src/**/*.java"
+      instructions: |
+        Plain Java 17, no external libraries, no Gradle, minSdk 30. Commands from the app to the
+        hook must go through the signature-protected broadcast (Keys.PERM). Flag any new
+        exported component, permission or Settings key that another app could use to control
+        Lazarus. Option names, defaults and limits belong in Keys.java and must match the UI.
+    - path: "AndroidManifest.xml"
+      instructions: |
+        Flag new exported components, weaker permission protection levels, and versionCode or
+        versionName changes that do not match Keys.VERSION and CHANGELOG.md.
+    - path: "magisk/**"
+      instructions: |
+        Magisk module files. They must use LF line endings (Magisk fails on CR). Check
+        sepolicy.rule for rules broader than Lazarus needs.
+    - path: ".github/workflows/**"
+      instructions: |
+        Pin third-party actions, keep GITHUB_TOKEN permissions minimal, and never expose signing
+        keys or secrets to pull_request runs from forks.
+    - path: "**/*.md"
+      instructions: |
+        User-facing docs. Check that gestures, defaults, setting names and ADB commands match
+        the code (Keys.java, Lazarus.java).
+
+  tools:
+    shellcheck:
+      enabled: true
+    actionlint:
+      enabled: true
+    yamllint:
+      enabled: true
+    markdownlint:
+      enabled: true
+    gitleaks:
+      enabled: true
+    pmd:
+      enabled: true
+
+chat:
+  auto_reply: true
