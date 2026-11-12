@@ -1,0 +1,60 @@
+# Builds the APK on every pull request and push to main, so broken code is caught before merging.
+# The APK is signed with a throwaway key made on the runner; the release key never enters CI.
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - ".github/badges/**"
+      - ".github/ISSUE_TEMPLATE/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check line endings and versions
+        run: |
+          # Magisk fails on CR characters.
+          if grep -rlI $'\r' magisk/; then
+            echo "::error::CR line endings in magisk/ (files listed above). Magisk needs LF."
+            exit 1
+          fi
+          manifest=$(grep -o 'android:versionName="[^"]*"' AndroidManifest.xml | cut -d'"' -f2)
+          keys=$(grep -o 'VERSION = "[^"]*"' src/io/github/albatrossmicrosystems/lazarus/Keys.java | cut -d'"' -f2)
+          if [ "$manifest" != "$keys" ]; then
+            echo "::error::versionName $manifest in AndroidManifest.xml does not match Keys.VERSION $keys"
+            exit 1
+          fi
+          echo "Version $manifest"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install Android SDK packages
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" >/dev/null
+
+      - name: Build
+        run: bash build.sh
+
+      - name: Summary
+        run: |
+          apk=$(ls lazarus-v*.apk)
+          echo "Built \`$apk\` ($(stat -c %s "$apk") bytes), signed with a throwaway CI key." >> "$GITHUB_STEP_SUMMARY"
