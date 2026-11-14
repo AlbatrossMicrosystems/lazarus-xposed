@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "label": "Store downloads",
+  "message": "353",
+  "color": "2ea043",
+  "logoSvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#fff\" stroke-width=\"2.6\" stroke-linecap=\"round\"><path d=\"M12 2.5v8.5\"/><path d=\"M6.2 6.2a8.2 8.2 0 1 0 11.6 0\"/></svg>",
+  "cacheSeconds": 1800
+}
